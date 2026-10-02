@@ -1,0 +1,7 @@
+# Keep these out of the build context (storage/ can grow to tens or hundreds of GB with models)
+storage/
+.git/
+.env
+.env.*
+CLAUDE.md
+README.md

@@ -1,0 +1,49 @@
+services:
+  comfyui:
+    # Built on yanwk/comfyui-boot:cu130-slim-v2 (Blackwell RTX 50xx / sm_120 compatible) with
+    # comfy-mcp and mcp-proxy added. cu126 bases do not support Blackwell and will crash.
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: comfyui:runtime
+    container_name: comfyui
+    restart: unless-stopped
+    ports:
+      # There is no authentication, so the default is localhost only (127.0.0.1).
+      # To reach it from other devices, set BIND_ADDR=0.0.0.0 (or a Tailscale IP) in .env.
+      - "${BIND_ADDR:-127.0.0.1}:8188:8188"   # ComfyUI UI/API
+      - "${BIND_ADDR:-127.0.0.1}:8189:8189"   # MCP server (mcp-proxy -> comfy-mcp, /mcp)
+    environment:
+      # Inside the container ComfyUI binds to 0.0.0.0; exposure is decided by `ports` above.
+      CLI_ARGS: "--listen 0.0.0.0 --port 8188"
+      # Reclaims memory lost to allocator fragmentation on 12 GB VRAM cards, reducing OOMs.
+      PYTORCH_CUDA_ALLOC_CONF: "expandable_segments:True"
+      # Time zone (change as needed)
+      TZ: "Asia/Seoul"
+    volumes:
+      # IMPORTANT: order matters. Mounting /root/.cache as a whole can shadow the mounts below it,
+      # so the more specific paths are declared first.
+      - ./storage/cache/hf-hub:/root/.cache/huggingface/hub
+      - ./storage/cache/torch-hub:/root/.cache/torch/hub
+      - ./storage/dot-cache:/root/.cache
+      - ./storage/dot-config:/root/.config
+      - ./storage/dot-local:/root/.local
+      # Persistent data
+      - ./storage/models:/root/ComfyUI/models
+      - ./storage/custom_nodes:/root/ComfyUI/custom_nodes
+      - ./storage/input:/root/ComfyUI/input
+      - ./storage/output:/root/ComfyUI/output
+      - ./storage/user:/root/ComfyUI/user
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - comfyui-net
+
+networks:
+  comfyui-net:
+    name: comfyui-net

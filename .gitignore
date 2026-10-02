@@ -1,0 +1,14 @@
+# Runtime data (models, outputs, caches, custom nodes) is never committed
+storage/
+
+# Local overrides and secrets
+.env
+.env.*
+
+# Private working notes (not published)
+CLAUDE.md
+
+# OS / editor files
+.DS_Store
+*.swp
+*~
